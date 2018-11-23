@@ -15,7 +15,7 @@
         <relativePath />
     </parent>
     <properties>
-        <h2o.version>3.22.0.2</h2o.version>
+        <h2o.version>3.22.0.1</h2o.version>
         <!-- -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -40,6 +40,19 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.h2o</groupId>
+            <artifactId>h2o-core</artifactId>
+            <version>${h2o.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>ai.h2o</groupId>
+            <artifactId>h2o-genmodel</artifactId>
+            <version>${h2o.version}</version>
+            <type>pom</type>
         </dependency>
     </dependencies>
     <build>
