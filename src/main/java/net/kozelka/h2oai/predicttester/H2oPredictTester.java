@@ -54,8 +54,9 @@ public class H2oPredictTester {
                 // set
                 final RowData row = new RowData();
                 int i = 0;
-                for (String name : nameIndexes.keySet()) {
-                    row.put(name, record.get(i++));
+                for (Map.Entry<String, Integer> entry : nameIndexes.entrySet()) {
+                    final String value = record.get(entry.getValue());
+                    row.put(entry.getKey(), value);
                 }
                 // predict
                 final BinomialModelPrediction pred = easyModel.predictBinomial(row);
