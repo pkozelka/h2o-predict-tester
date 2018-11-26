@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,15 +25,12 @@ import java.util.List;
 import java.util.Map;
 
 public class H2oPredictTester {
-    /**
-     * @param argsArray see README
-     */
-    public static void main(String... argsArray) throws IOException, PredictException {
-        final LinkedList<String> args = new LinkedList<>(Arrays.asList(argsArray));
-        final File mojoFile = new File(args.removeFirst());
-        if (!mojoFile.exists()) {
-            throw new FileNotFoundException(mojoFile.getAbsolutePath());
-        }
+
+    private final EasyPredictModelWrapper easyModel;
+    private int responseIdx;
+
+    public H2oPredictTester(File mojoFile) throws IOException {
+        fileMustExist(mojoFile);
 
         final EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config();
         System.err.println("Loading mojo " + mojoFile.getAbsolutePath());
@@ -41,20 +39,15 @@ public class H2oPredictTester {
         System.err.printf("We are predicting field `%s` (index: %d)%n",
             model.getResponseName(),
             model.getResponseIdx()
-            );
+        );
+        responseIdx = model.getResponseIdx();
         config.setConvertInvalidNumbersToNa(false);
-        final EasyPredictModelWrapper easyModel = new EasyPredictModelWrapper(config);
+        easyModel = new EasyPredictModelWrapper(config);
+    }
 
-        final File csvDataFile = new File(args.removeFirst());
-        if (!csvDataFile.exists()) {
-            throw new FileNotFoundException(csvDataFile.getAbsolutePath());
-        }
-
-        final CSVPrinter csvPrinter = new CSVPrinter(System.out, CSVFormat.TDF);
-
-        final FileReader fileReader = new FileReader(csvDataFile);
-        final CSVParser parser = new CSVParser(fileReader, CSVFormat.DEFAULT);
+    private void predictAll(CSVParser parser, CSVPrinter csvPrinter) throws IOException, PredictException {
         final Map<String, Integer> nameIndexes = new HashMap<>();
+
         for (CSVRecord record : parser) {
             if (nameIndexes.isEmpty()) {
                 // first line contains column names
@@ -62,7 +55,7 @@ public class H2oPredictTester {
                     nameIndexes.put(name, nameIndexes.size());
                 }
                 final List<String> outputNames = new ArrayList<>(nameIndexes.keySet());
-                outputNames.add("predictedValue");
+                outputNames.add("predict");
                 outputNames.add("error");
                 outputNames.add("p0");
                 outputNames.add("p1");
@@ -73,9 +66,9 @@ public class H2oPredictTester {
                 // set
                 final RowData row = new RowData();
                 for (Map.Entry<String, Integer> entry : nameIndexes.entrySet()) {
-                    final Integer index = entry.getValue();
+                    final int index = entry.getValue();
                     final String value = record.get(index);
-                    if (index == model.getResponseIdx()) {
+                    if (index == responseIdx) {
                         expectedValue = value;
                     }
                     outputRecord.add(value);
@@ -108,6 +101,36 @@ public class H2oPredictTester {
                 csvPrinter.printRecord(outputRecord);
             }
         }
-        csvPrinter.close();
+    }
+
+    void predictAll(File csvDataFile, File resultFile) throws IOException, PredictException {
+        fileMustExist(csvDataFile);
+
+        final PrintStream ps = resultFile == null ? System.out : new PrintStream(resultFile);
+
+        try (final FileReader fileReader = new FileReader(csvDataFile)) {
+            final CSVParser parser = new CSVParser(fileReader, CSVFormat.DEFAULT);
+            final CSVPrinter csvPrinter = new CSVPrinter(ps, CSVFormat.TDF);
+            predictAll(parser, csvPrinter);
+        }
+    }
+
+    private static void fileMustExist(File file) throws FileNotFoundException {
+        if (!file.exists()) {
+            throw new FileNotFoundException(file.getAbsolutePath());
+        }
+    }
+
+    /**
+     * @param argsArray see README
+     */
+    public static void main(String... argsArray) throws IOException, PredictException {
+        final LinkedList<String> args = new LinkedList<>(Arrays.asList(argsArray));
+        final File mojoFile = new File(args.removeFirst());
+        final H2oPredictTester pt = new H2oPredictTester(mojoFile);
+
+        final File csvDataFile = new File(args.removeFirst());
+        pt.predictAll(csvDataFile, null);
+
     }
 }
