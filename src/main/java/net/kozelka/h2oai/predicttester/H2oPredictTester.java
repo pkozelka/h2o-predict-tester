@@ -35,9 +35,13 @@ public class H2oPredictTester {
         }
 
         final EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config();
-        System.out.println("Loading mojo " + mojoFile.getAbsolutePath());
+        System.err.println("Loading mojo " + mojoFile.getAbsolutePath());
         final GenModel model = GbmMojoModel.load(mojoFile.getAbsolutePath());
         config.setModel(model);
+        System.err.printf("We are predicting field `%s` (index: %d)%n",
+            model.getResponseName(),
+            model.getResponseIdx()
+            );
         config.setConvertInvalidNumbersToNa(false);
         final EasyPredictModelWrapper easyModel = new EasyPredictModelWrapper(config);
 
@@ -65,10 +69,15 @@ public class H2oPredictTester {
                 csvPrinter.printRecord(outputNames);
             } else {
                 final List<String> outputRecord = new ArrayList<>();
+                String expectedValue = null;
                 // set
                 final RowData row = new RowData();
                 for (Map.Entry<String, Integer> entry : nameIndexes.entrySet()) {
-                    final String value = record.get(entry.getValue());
+                    final Integer index = entry.getValue();
+                    final String value = record.get(index);
+                    if (index == model.getResponseIdx()) {
+                        expectedValue = value;
+                    }
                     outputRecord.add(value);
                     row.put(entry.getKey(), value);
                 }
@@ -82,13 +91,15 @@ public class H2oPredictTester {
                     predictedValue = pred.label;
                     p0 = String.format("%f", pred.classProbabilities[0]);
                     p1 = String.format("%f", pred.classProbabilities[1]);
-/*
-                    if (predictedValue.equals(testValue)) {
-                        error = "MISMATCH";
+                    if (predictedValue == null) {
+                        error = "MISSING PREDICTION";
+                    } else if (predictedValue.equals(expectedValue)) {
+                        error = String.format("MISMATCH: expected: '%s', predicted: '%s'",
+                            expectedValue,
+                            predictedValue);
                     }
-*/
                 } catch (PredictUnknownCategoricalLevelException e) {
-                    error = String.format("%s: %s", e.getClass().getName(), e.getMessage());
+                    error = e.getMessage();
                 }
                 outputRecord.add(predictedValue);
                 outputRecord.add(error);
