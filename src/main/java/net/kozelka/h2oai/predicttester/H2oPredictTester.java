@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,8 @@ import java.util.Map;
 public class H2oPredictTester {
 
     private final EasyPredictModelWrapper easyModel;
-    private int responseIdx;
+    private final int responseIdx;
+    private final Map<String, Integer> modelIndexes = new LinkedHashMap<>();
 
     public H2oPredictTester(File mojoFile) throws IOException {
         fileMustExist(mojoFile);
@@ -40,21 +41,30 @@ public class H2oPredictTester {
             model.getResponseName(),
             model.getResponseIdx()
         );
+        int index = 0;
+        for (String name : model.getNames()) {
+            modelIndexes.put(name, index);
+            index++;
+        }
         responseIdx = model.getResponseIdx();
         config.setConvertInvalidNumbersToNa(false);
         easyModel = new EasyPredictModelWrapper(config);
     }
 
     private void predictAll(CSVParser parser, CSVPrinter csvPrinter) throws IOException, PredictException {
-        final Map<String, Integer> nameIndexes = new HashMap<>();
-
+        final int[] modelToCsvIndex = new int[modelIndexes.size()];
+        int cnt = 0;
         for (CSVRecord record : parser) {
-            if (nameIndexes.isEmpty()) {
+            if (cnt == 0) {
                 // first line contains column names
-                for (String name : record) {
-                    nameIndexes.put(name, nameIndexes.size());
+                int csvIndex = 0;
+                for (String name: record) {
+                    // translate model index into csv index
+                    final int modelIndex = modelIndexes.get(name);
+                    modelToCsvIndex[modelIndex] = csvIndex;
+                    csvIndex ++;
                 }
-                final List<String> outputNames = new ArrayList<>(nameIndexes.keySet());
+                final List<String> outputNames = new ArrayList<>(modelIndexes.keySet());
                 outputNames.add("predict");
                 outputNames.add("error");
                 outputNames.add("p0");
@@ -63,12 +73,13 @@ public class H2oPredictTester {
             } else {
                 final List<String> outputRecord = new ArrayList<>();
                 String expectedValue = null;
-                // set
+                // each record begins with columns from model, in model order
                 final RowData row = new RowData();
-                for (Map.Entry<String, Integer> entry : nameIndexes.entrySet()) {
-                    final int index = entry.getValue();
-                    final String value = record.get(index);
-                    if (index == responseIdx) {
+                for (Map.Entry<String, Integer> entry : modelIndexes.entrySet()) {
+                    final int modelIndex = entry.getValue();
+                    final int csvIndex = modelToCsvIndex[modelIndex];
+                    final String value = record.get(csvIndex);
+                    if (modelIndex == responseIdx) {
                         expectedValue = value;
                     }
                     outputRecord.add(value);
@@ -86,7 +97,7 @@ public class H2oPredictTester {
                     p1 = String.format("%f", pred.classProbabilities[1]);
                     if (predictedValue == null) {
                         error = "MISSING PREDICTION";
-                    } else if (predictedValue.equals(expectedValue)) {
+                    } else if (!predictedValue.equals(expectedValue)) {
                         error = String.format("MISMATCH: expected: '%s', predicted: '%s'",
                             expectedValue,
                             predictedValue);
@@ -100,6 +111,8 @@ public class H2oPredictTester {
                 outputRecord.add(p1);
                 csvPrinter.printRecord(outputRecord);
             }
+            //
+            cnt ++;
         }
     }
 

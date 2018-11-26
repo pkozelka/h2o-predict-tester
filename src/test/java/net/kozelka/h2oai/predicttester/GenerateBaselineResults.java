@@ -7,7 +7,6 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 @RunWith(Parameterized.class)
 public class GenerateBaselineResults {
@@ -16,8 +15,7 @@ public class GenerateBaselineResults {
 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<? extends String> deepFiles() throws IOException {
-        final List<String> models = FileUtils.getDirectoryNames(DATASETS, "*/models/*v?.??_*.mojo.d", null, false);
-        return models;
+        return FileUtils.getDirectoryNames(DATASETS, "*/models/*v?.??_*.mojo.d", null, false);
     }
 
     @Parameterized.Parameter
@@ -29,7 +27,7 @@ public class GenerateBaselineResults {
         final String datasetName = mpa[0];
 
         final File csvFile = new File(DATASETS, String.format("%1$s/%1$s.csv", datasetName));
-        final File resultFile = new File(RESULT, String.format("%s/%s.tsv",
+        final File resultFile = new File(RESULT, String.format("%s/models/%s.tsv",
             datasetName,
             mpa[2].replace(".mojo.d", "")
         ));
