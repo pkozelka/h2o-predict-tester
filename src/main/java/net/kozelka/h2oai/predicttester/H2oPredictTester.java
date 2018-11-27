@@ -98,9 +98,7 @@ public class H2oPredictTester {
                     if (predictedValue == null) {
                         error = "MISSING PREDICTION";
                     } else if (!predictedValue.equals(expectedValue)) {
-                        error = String.format("MISMATCH: expected: '%s', predicted: '%s'",
-                            expectedValue,
-                            predictedValue);
+                        error = "MISMATCH";
                     }
                 } catch (PredictUnknownCategoricalLevelException e) {
                     error = e.getMessage();
