@@ -15,7 +15,7 @@
         <relativePath />
     </parent>
     <properties>
-        <h2o.version>3.22.0.1</h2o.version>
+        <h2o.version>3.22.0.2</h2o.version>
         <!-- -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -35,6 +35,7 @@
             <artifactId>plexus-utils</artifactId>
             <version>3.1.0</version>
         </dependency>
+        <!-- TODO: consider switching to opencsv:2.3 which is also used in h2o-genmodel -->
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-csv -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -44,15 +45,14 @@
 
         <dependency>
             <groupId>ai.h2o</groupId>
-            <artifactId>h2o-core</artifactId>
-            <version>${h2o.version}</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>ai.h2o</groupId>
             <artifactId>h2o-genmodel</artifactId>
             <version>${h2o.version}</version>
-            <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>ai.h2o</groupId>
+                    <artifactId>deepwater-backend-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     <build>
@@ -92,6 +92,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>        </plugins>
+            </plugin>
+        </plugins>
     </build>
 </project>
