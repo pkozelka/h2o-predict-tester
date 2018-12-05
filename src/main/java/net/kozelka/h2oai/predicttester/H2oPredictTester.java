@@ -121,7 +121,8 @@ public class H2oPredictTester {
 
         try (final FileReader fileReader = new FileReader(csvDataFile)) {
             final CSVParser parser = new CSVParser(fileReader, CSVFormat.DEFAULT);
-            final CSVPrinter csvPrinter = new CSVPrinter(ps, CSVFormat.TDF);
+            final CSVFormat tdf = CSVFormat.TDF.withRecordSeparator('\n');
+            final CSVPrinter csvPrinter = new CSVPrinter(ps, tdf);
             predictAll(parser, csvPrinter);
         }
     }
