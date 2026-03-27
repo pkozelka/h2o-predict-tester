@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
-            <version>3.1.0</version>
+            <version>4.0.3</version>
         </dependency>
         <!-- TODO: consider switching to opencsv:2.3 which is also used in h2o-genmodel -->
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-csv -->
